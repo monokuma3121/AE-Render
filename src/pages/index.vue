@@ -14,7 +14,7 @@ import { inject } from "vue";
 import { mainStore } from "@/store";
 import { storeToRefs } from "pinia";
 const store = mainStore();
-let { isCover } = storeToRefs(store);
+let { isCover, electronInfo } = storeToRefs(store);
 
 const ws = inject("ws");
 
@@ -31,9 +31,6 @@ const toHistory = () => {
   current.value = History;
   router.push("/history");
 };
-
-
-
 
 /**
  * 根据地址栏切换tab样式
@@ -86,31 +83,27 @@ const showCover = () => {
   //   store.msgAlert("请在工作页面打开教程", "warning");
   // }
 
-  ws.send(JSON.stringify({ type: "document"}));
+  ws.send(JSON.stringify({ type: "document" }));
 };
 
+const showDesktop = ref(false);
 
-const showDesktop = ref(false)
-
-
-if(window.electronAPI) {
+if (window.electronAPI) {
   //pc端
-  showDesktop.value = false
+  showDesktop.value = false;
   // const filePath = await window.electronAPI.getLocalFilePath();
-// console.log("filePath:", filePath)
-}else {
+
+} else {
   //网页端
 
-  showDesktop.value = true
+  showDesktop.value = true;
 }
 
 // const exePath = ref(null)
-const aePath = ref(null)
-
-
+const aePath = ref(null);
 
 // const sendExePath = async() => {
-  
+
 //  exePath.value = await window.electronAPI.getLocalFilePath();
 //  if(exePath.value) {
 
@@ -118,24 +111,54 @@ const aePath = ref(null)
 //  }
 
 // }
+//获取AE安装路径 一键搜集
+const sendAePath = async () => {
 
-const sendAePath = async() => {
-  
+  /** 
+   * - 先把路径传递给electron的`collectFiles`，这个函数会把路径处理，返回出来信息发送给mainWindow.webContents.send('floder-info', JSON.stringify(result));
+   * 
+   * - 然后调`uploadFile(win.webContents, filepath)`把路径传过去，
+   * 
+   * - uploadFile在app.js中会调用file-chunk，把chunk文件片段给前端，前端再ws.send发给服务端
+  */
+  electronInfo.value.allOK = false
   aePath.value = await window.electronAPI.getLocalFilePath();
-  if(aePath.value) {
+  if (aePath.value) {
     store.msgAlert("获取成功", "success");
-  }else {
+
+    // electron发送文件片段信息chunk，网页端接收（可直接修改为将value直接用ws发送至服务端）
+    //electron -> 前端 -> 服务端
+    window.electronAPI.onUploadChunk((event, value) => {
+      // 直接转发给服务端
+      // ws.send(value);
+    });
+
+    // 一键搜集后返回的信息 
+    //const result = await collectFiles(myPath);
+    //mainWindow.webContents.send('floder-info', JSON.stringify(result));
+    window.electronAPI.getFloderInfo((event, value) => {
+      const info = JSON.parse(value);
+      // 整理信息，填充默认值
+      electronInfo.value.compName = info["comp name"];
+      electronInfo.value.frameRate = info.frameRate;
+      electronInfo.value.width = info.width;
+      electronInfo.value.height = info.height;
+      electronInfo.value.startTime = info["Time Span Start"];
+      electronInfo.value.endTime = info["Time Span End"];
+      electronInfo.value.startFrame = info.startFrame;
+      electronInfo.value.endFrame = info.endFrame;
+      electronInfo.value.font = info.font;
+      electronInfo.value.folderInfor = info["folderInfor"];
+     
+
+
+
+      electronInfo.value.allOK = true
+    });
+  } else {
     store.msgAlert("获取失败", "warning");
   }
-  }
-
-
-
-
-
-
-
-
+};
 </script>
 
 <template>
@@ -152,10 +175,9 @@ const sendAePath = async() => {
       </el-menu-item>
 
       <div class="logout">
-
-        <el-button @click="console.log(123);" v-if="showDesktop">&nbsp;下载桌面端&nbsp;</el-button>
+        <el-button @click="console.log(123)" v-if="showDesktop">&nbsp;下载桌面端&nbsp;</el-button>
         <!-- <el-button @click="sendExePath" v-if="!showDesktop">&nbsp;获取本应用安装路径&nbsp;</el-button> -->
-        <el-button @click="sendAePath" v-if="!showDesktop">&nbsp;获取AE安装路径&nbsp;</el-button>
+        <el-button @click="sendAePath" v-if="!showDesktop">&nbsp;一键搜集&nbsp;</el-button>
         <el-button @click="showCover">&nbsp;教程&nbsp;</el-button>
         <button @click="logout">退出登录</button>
       </div>
@@ -174,13 +196,11 @@ const sendAePath = async() => {
 </template>
 
 <style>
-
 @media screen and (max-width: 1536px) {
   /* 在屏幕宽度小于等于1536px时应用的样式规则 */
   .el-menu-vertical-demo {
     margin-bottom: 5px !important;
   }
-
 }
 
 .el-container {
@@ -235,5 +255,5 @@ const sendAePath = async() => {
 .logout button:active {
   transform: scale(0.9);
 }
-</style>import { watch } from "less";
-
+</style>
+import { watch } from "less";

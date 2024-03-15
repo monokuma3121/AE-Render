@@ -10,7 +10,7 @@ import { mainStore } from "@/store";
 import { storeToRefs } from "pinia";
 const store = mainStore();
 
-let { isLook, isCover, renderState, downloadId } = storeToRefs(store);
+let { isLook, isCover, renderState, downloadId, electronInfo } = storeToRefs(store);
 
 const ref1 = ref();
 const ref2 = ref();
@@ -28,8 +28,6 @@ const switchFlag = ref(false);
 
 const isOff = ref(true);
 
-
-
 const outputForm = reactive({
   format: null,
   postRenderAction: "None",
@@ -40,6 +38,7 @@ const outputForm = reactive({
   depth: "Millions of Colors",
   color: "Premultiplied (Matted)",
   starting: 0,
+  ending: 0,
   useCompFrameNumber: true,
   resize: false,
   lockAspectRatio: true,
@@ -95,20 +94,19 @@ function checkAndRemoveKey(Key, newVal) {
   let targetKey = becomeBig(Key);
 
   if (Key === "resizeTo") {
-    if(outputForm.resizeToWidth === "0" || outputForm.resizeToHeight === "0") {
-
-    }else {
-      targetKey = "Resize to";
-    if (Object.keys(outputSettingsTemp.value).includes(targetKey)) {
-      // 如果重复，则删除该属性
-      delete outputSettingsTemp.value[targetKey];
-    }
-    if (outputForm.resizeTo === "Custom") {
-      outputSettingsTemp.value[targetKey] = `${outputForm.resizeToWidth},${outputForm.resizeToHeight}`;
+    if (outputForm.resizeToWidth === "0" || outputForm.resizeToHeight === "0") {
     } else {
-      outputSettingsTemp.value[targetKey] = `${outputForm.resizeTo}`;
-    }
-    return;
+      targetKey = "Resize to";
+      if (Object.keys(outputSettingsTemp.value).includes(targetKey)) {
+        // 如果重复，则删除该属性
+        delete outputSettingsTemp.value[targetKey];
+      }
+      if (outputForm.resizeTo === "Custom") {
+        outputSettingsTemp.value[targetKey] = `${outputForm.resizeToWidth},${outputForm.resizeToHeight}`;
+      } else {
+        outputSettingsTemp.value[targetKey] = `${outputForm.resizeTo}`;
+      }
+      return;
     }
   }
 
@@ -145,34 +143,29 @@ function renderCheckAndRemoveKey(Key, newVal) {
 const putRenderTemp = () => {
   customDialogVisible.value = false;
 
-
-  if(startTime.value === '' && endTime.value === '' && duration.value === '') {
-
-  }else {
+  if (startTime.value === "" && endTime.value === "" && duration.value === "") {
+  } else {
     if (Object.keys(renderSettingsTemp.value).includes("Time Span Start")) {
-    delete renderSettingsTemp.value["Time Span Start"];
-    renderSettingsTemp.value["Time Span Start"] = `${timeStringToSeconds(startTime.value)}`;
-  } else {
-    renderSettingsTemp.value["Time Span Start"] = `${timeStringToSeconds(startTime.value)}`;
+      delete renderSettingsTemp.value["Time Span Start"];
+      renderSettingsTemp.value["Time Span Start"] = `${timeStringToSeconds(startTime.value)}`;
+    } else {
+      renderSettingsTemp.value["Time Span Start"] = `${timeStringToSeconds(startTime.value)}`;
+    }
+
+    if (Object.keys(renderSettingsTemp.value).includes("Time Span End")) {
+      delete renderSettingsTemp.value["Time Span End"];
+      renderSettingsTemp.value["Time Span End"] = `${timeStringToSeconds(endTime.value)}`;
+    } else {
+      renderSettingsTemp.value["Time Span End"] = `${timeStringToSeconds(endTime.value)}`;
+    }
+
+    if (Object.keys(renderSettingsTemp.value).includes("Time Span Duration")) {
+      delete renderSettingsTemp.value["Time Span Duration"];
+      renderSettingsTemp.value["Time Span Duration"] = `${timeStringToSeconds(duration.value)}`;
+    } else {
+      renderSettingsTemp.value["Time Span Duration"] = `${timeStringToSeconds(duration.value)}`;
+    }
   }
-
-  if (Object.keys(renderSettingsTemp.value).includes("Time Span End")) {
-    delete renderSettingsTemp.value["Time Span End"];
-    renderSettingsTemp.value["Time Span End"] = `${timeStringToSeconds(endTime.value)}`;
-  } else {
-    renderSettingsTemp.value["Time Span End"] = `${timeStringToSeconds(endTime.value)}`;
-  }
-
-  if (Object.keys(renderSettingsTemp.value).includes("Time Span Duration")) {
-    delete renderSettingsTemp.value["Time Span Duration"];
-    renderSettingsTemp.value["Time Span Duration"] = `${timeStringToSeconds(duration.value)}`;
-  } else {
-    renderSettingsTemp.value["Time Span Duration"] = `${timeStringToSeconds(duration.value)}`;
-  }
-
-  }
-
-
 };
 
 function objectToString(obj) {
@@ -186,65 +179,71 @@ function objectToString(obj) {
 }
 
 const isNoStartingVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.starting === '') {
+
+  if (outputForm.starting === "") {
     outputForm.starting = 0;
   }
-}
+};
+const isNoEndingVal = () => {
+  
+  if (outputForm.ending === "") {
+    outputForm.ending = 0;
+  }
+};
 const isNoWidthVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.resizeToWidth === '') {
-    outputForm.resizeToWidth = '0';
+ 
+  if (outputForm.resizeToWidth === "") {
+    outputForm.resizeToWidth = "0";
   }
-}
+};
 const isNoHeightVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.resizeToHeight === '') {
-    outputForm.resizeToHeight = '0';
+
+  if (outputForm.resizeToHeight === "") {
+    outputForm.resizeToHeight = "0";
   }
-}
+};
 const isNoTopVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.cropTop === '') {
+
+  if (outputForm.cropTop === "") {
     outputForm.cropTop = 0;
   }
-}
+};
 const isNoLeftVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.cropLeft === '') {
+ 
+  if (outputForm.cropLeft === "") {
     outputForm.cropLeft = 0;
   }
-}
+};
 const isNoBottomVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.cropBottom === '') {
+ 
+  if (outputForm.cropBottom === "") {
     outputForm.cropBottom = 0;
   }
-}
+};
 const isNoRightVal = () => {
-  // console.log(outputForm.starting);
-  if(outputForm.cropRight === '') {
+
+  if (outputForm.cropRight === "") {
     outputForm.cropRight = 0;
   }
-}
+};
 const isNoStartTimeVal = () => {
-  // console.log(123);
-  if(startTime.value === '') {
-    startTime.value = '0:0:0:0';
+
+  if (startTime.value === "") {
+    startTime.value = "0:0:0:0";
   }
-}
+};
 const isNoEndTimeVal = () => {
-  // console.log(outputForm.starting);
-  if(endTime.value === '') {
-    endTime.value = '0:0:0:0';
+ 
+  if (endTime.value === "") {
+    endTime.value = "0:0:0:0";
   }
-}
+};
 const isNoDurationTimeVal = () => {
-  // console.log(outputForm.starting);
-  if(duration.value === '') {
-    duration.value = '0:0:0:0';
+
+  if (duration.value === "") {
+    duration.value = "0:0:0:0";
   }
-}
+};
 
 const isRsesizeDisable = ref(true);
 const isCropDisable = ref(true);
@@ -260,7 +259,7 @@ watch(
         () => outputForm.includeProjectLink,
         (newVal, oldVal) => {
           checkAndRemoveKey("includeProjectLink", newVal);
-          console.log("outputSettingsTemp:", outputSettingsTemp.value);
+    
         }
       );
 
@@ -295,12 +294,10 @@ watch(
       watch(
         () => outputForm.starting,
         (newVal, oldVal) => {
-          if(newVal === 0) {
-
-          }else {
+          if (newVal === 0) {
+          } else {
             checkAndRemoveKey("starting", newVal);
           }
-          
         }
       );
 
@@ -370,59 +367,40 @@ watch(
       watch(
         () => outputForm.cropTop,
         (newVal, oldVal) => {
-
-          if(newVal === 0) {
-
-}else {
-  
-  checkAndRemoveKey("cropTop", newVal);
-}
-
-
-
+          if (newVal === 0) {
+          } else {
+            checkAndRemoveKey("cropTop", newVal);
+          }
         }
       );
 
       watch(
         () => outputForm.cropLeft,
         (newVal, oldVal) => {
-          if(newVal === 0) {
-
-}else {
-  
-  checkAndRemoveKey("cropLeft", newVal);
-}
-
-       
+          if (newVal === 0) {
+          } else {
+            checkAndRemoveKey("cropLeft", newVal);
+          }
         }
       );
 
       watch(
         () => outputForm.cropBottom,
         (newVal, oldVal) => {
-
-          if(newVal === 0) {
-
-}else {
-  
-  checkAndRemoveKey("cropBottom", newVal);
-}
-          
+          if (newVal === 0) {
+          } else {
+            checkAndRemoveKey("cropBottom", newVal);
+          }
         }
       );
 
       watch(
         () => outputForm.cropRight,
         (newVal, oldVal) => {
-
-
-          if(newVal === 0) {
-
-}else {
-  
-  checkAndRemoveKey("cropRight", newVal);
-}
-         
+          if (newVal === 0) {
+          } else {
+            checkAndRemoveKey("cropRight", newVal);
+          }
         }
       );
 
@@ -470,7 +448,7 @@ watch(
         () => renderForm.quality,
         (newVal, oldVal) => {
           renderCheckAndRemoveKey("quality", newVal);
-          console.log(renderSettingsTemp.value);
+         
         }
       );
 
@@ -733,6 +711,8 @@ const progressCount = inject("progressCount");
 const tempInfo = inject("tempInfo");
 const downloadProgress = inject("downloadProgress");
 const downloadJobId = inject("downloadJobId");
+const needSendFiles = inject("needSendFiles");
+const needSendFont = inject("needSendFont");
 
 let temp = inject("temp");
 let receivedSize = inject("receivedSize");
@@ -800,32 +780,37 @@ const changeTime = () => {
 };
 
 function timeCalculation(timeA, timeB, operation) {
-  let timeArrayA = timeA.split(":").map(Number);
-  let timeArrayB = timeB.split(":").map(Number);
+  if (typeof timeA === "number") {
+    const result = timeB - timeA;
+    return result;
+  } else {
+    let timeArrayA = timeA.split(":").map(Number);
+    let timeArrayB = timeB.split(":").map(Number);
 
-  let millisecondsA = timeArrayA[0] * 3600000 + timeArrayA[1] * 60000 + timeArrayA[2] * 1000 + timeArrayA[3] * (1000 / 24);
-  let millisecondsB = timeArrayB[0] * 3600000 + timeArrayB[1] * 60000 + timeArrayB[2] * 1000 + timeArrayB[3] * (1000 / 24);
+    let millisecondsA = timeArrayA[0] * 3600000 + timeArrayA[1] * 60000 + timeArrayA[2] * 1000 + timeArrayA[3] * (1000 / 24);
+    let millisecondsB = timeArrayB[0] * 3600000 + timeArrayB[1] * 60000 + timeArrayB[2] * 1000 + timeArrayB[3] * (1000 / 24);
 
-  let resultMilliseconds = millisecondsB - millisecondsA;
+    let resultMilliseconds = millisecondsB - millisecondsA;
 
-  if (resultMilliseconds < 0) {
-    return "Error: Result is negative";
+    if (resultMilliseconds < 0) {
+      return "Error: Result is negative";
+    }
+
+    let resultHours = Math.floor(resultMilliseconds / 3600000);
+    resultMilliseconds %= 3600000;
+    let resultMinutes = Math.floor(resultMilliseconds / 60000);
+    resultMilliseconds %= 60000;
+    let resultSeconds = Math.floor(resultMilliseconds / 1000);
+    let resultMilliseconds24;
+
+    if (operation === "dur") {
+      resultMilliseconds24 = Math.floor((resultMilliseconds % 1000) / (1000 / 24)) + 1;
+    } else if (operation === "end") {
+      resultMilliseconds24 = Math.floor((resultMilliseconds % 1000) / (1000 / 24)) - 1;
+    }
+
+    return `${resultHours}:${resultMinutes}:${resultSeconds}:${resultMilliseconds24}`;
   }
-
-  let resultHours = Math.floor(resultMilliseconds / 3600000);
-  resultMilliseconds %= 3600000;
-  let resultMinutes = Math.floor(resultMilliseconds / 60000);
-  resultMilliseconds %= 60000;
-  let resultSeconds = Math.floor(resultMilliseconds / 1000);
-  let resultMilliseconds24;
-
-  if (operation === "dur") {
-    resultMilliseconds24 = Math.floor((resultMilliseconds % 1000) / (1000 / 24)) + 1;
-  } else if (operation === "end") {
-    resultMilliseconds24 = Math.floor((resultMilliseconds % 1000) / (1000 / 24)) - 1;
-  }
-
-  return `${resultHours}:${resultMinutes}:${resultSeconds}:${resultMilliseconds24}`;
 }
 
 function timeStringToSeconds(timeString) {
@@ -876,7 +861,7 @@ watch(
           isWidthDisable.value = false;
           isHeightDisable.value = false;
         } else {
-          console.log(outputForm.resizeTo);
+        
           const parts = outputForm.resizeTo.split(" · ");
 
           outputForm.resizeToWidth = parts[1].split("x")[0];
@@ -1033,6 +1018,55 @@ watch(
   }
 );
 
+const currentMd5 = ref([]);
+
+watch(
+  electronInfo,
+
+  () => {
+    if (electronInfo.value.allOK) {
+      displayFilesRef.value = [];
+
+      currentMd5.value = [];
+
+      lastInput1.value = electronInfo.value.compName;
+
+      inputFrameRate.value = electronInfo.value.frameRate;
+      renderForm.frameRate = electronInfo.value.frameRate;
+
+      outputForm.resizeToWidth = electronInfo.value.width;
+      outputForm.resizeToHeight = electronInfo.value.height;
+
+      startTime.value = electronInfo.value.startTime;
+      endTime.value = electronInfo.value.endTime;
+      calculateDuration();
+
+      outputForm.starting = electronInfo.value.startFrame;
+      outputForm.ending = electronInfo.value.endFrame;
+
+      if (electronInfo.value.folderInfor) {
+   
+
+        electronInfo.value.folderInfor.forEach((file) => {
+          insertFiles([{ name: file.name, size: file.size, md5: file.md5 }]);
+          currentMd5.value.push(file.md5);
+        });
+      }
+      loading.value = false;
+      ws.send(JSON.stringify({ type: "fileAndFontCheck", files: currentMd5.value, fonts: electronInfo.value.font }));
+
+      console.log(electronInfo.value.allOK);
+
+ 
+
+      isSubmitDisable.value = false;
+    }
+  },
+  {
+    deep: true,
+  }
+);
+
 watch(
   [progressCount, myId],
   () => {
@@ -1064,7 +1098,7 @@ watch(
   showRenderMsg,
   () => {
     if (showRenderMsg.value === "创建中") {
-      console.log("132112");
+    
       isCreated.value = true;
     } else {
       isCreated.value = false;
@@ -1128,7 +1162,6 @@ watch(selectValue, () => {
     outputForm.resize = false;
     outputForm.crop = false;
     outputForm.outputAudio = "Auto";
-   
   } else if (["Alpha Only", "Lossless", "Lossless with Alpha"].includes(selectValue.value)) {
     hzvv.value = "avi";
     outputForm.videoOutput = true;
@@ -1136,8 +1169,8 @@ watch(selectValue, () => {
     outputForm.crop = false;
 
     outputForm.outputAudio = "Auto";
-  
-    if(selectValue.value === "Alpha Only") {
+
+    if (selectValue.value === "Alpha Only") {
       outputForm.outputAudio = "Off";
     }
   } else if (["High Quality", "High Quality with Alpha"].includes(selectValue.value)) {
@@ -1147,7 +1180,6 @@ watch(selectValue, () => {
     outputForm.crop = false;
 
     outputForm.outputAudio = "Auto";
-  
   } else if (selectValue.value === "AIFF 48kHz") {
     hzvv.value = "aif";
     outputForm.videoOutput = false;
@@ -1155,7 +1187,6 @@ watch(selectValue, () => {
     outputForm.crop = false;
 
     outputForm.outputAudio = "On";
-
   } else if (["Multi-Machine Sequence", "Photoshop"].includes(selectValue.value)) {
     hzvv.value = "psd";
     outputForm.videoOutput = true;
@@ -1163,7 +1194,6 @@ watch(selectValue, () => {
     outputForm.crop = false;
 
     outputForm.outputAudio = "Off";
-   
   } else if (selectValue.value === "TIFF Sequence with Alpha") {
     hzvv.value = "tif";
     outputForm.videoOutput = true;
@@ -1171,7 +1201,6 @@ watch(selectValue, () => {
     outputForm.crop = false;
 
     outputForm.outputAudio = "Off";
-
   }
 });
 
@@ -1356,8 +1385,7 @@ const changeOutName = (e) => {
 };
 
 const test = () => {
-  console.log("screen.width:", screen.width);
-  console.log("screen.height:", screen.height);
+
 };
 
 //点击“替换”按钮
@@ -1517,17 +1545,21 @@ const formatFileSize = (size) => {
 
 //点击“上传文件”按钮
 const submitBtn = () => {
-  if (displayFilesRef.value[0].name.slice(((displayFilesRef.value[0].name.lastIndexOf(".") - 1) >>> 0) + 2) === "aep") {
-    //如果数组的第一个文件的后缀为aep
-    if (isRepeat.value && jobName.value !== "") {
-      //如果数组的第一个文件的后缀为aep
-
-      submitFiles(0, displayFilesRef.value.length);
-    } else {
-      alert("工作名重复或为空");
-    }
+  if (electronInfo.value.allOK) {
+    newSubmitFiles();
   } else {
-    alert("缺少工程文件！");
+    if (displayFilesRef.value[0].name.slice(((displayFilesRef.value[0].name.lastIndexOf(".") - 1) >>> 0) + 2) === "aep") {
+      //如果数组的第一个文件的后缀为aep
+      if (isRepeat.value && jobName.value !== "") {
+        //如果数组的第一个文件的后缀为aep
+
+        submitFiles(0, displayFilesRef.value.length);
+      } else {
+        alert("工作名重复或为空");
+      }
+    } else {
+      alert("缺少工程文件！");
+    }
   }
 };
 
@@ -1580,6 +1612,50 @@ const submitFiles = async (startIndex, endIndex) => {
   isRenderDisable.value = false;
 };
 
+//newSubmit
+const newSubmitFiles = async () => {
+  //禁用上传按钮
+  isSubmitDisable.value = true;
+  electronInfo.value.allOK = false;
+
+  //for循环
+  for (let num = 0; num < displayFilesRef.value.length; ++num) {
+    const file = displayFilesRef.value[num];
+    if (file.sent) continue;
+
+    if (file.md5 in needSendFiles) {
+      console.log("A");
+      let message = {
+        type: "fileUpload",
+        fileName: file.name,
+        fileSize: file.size,
+        md5Msg: file.md5,
+        isFont: false,
+      };
+      ws.send(JSON.stringify(message));
+    } else {
+      console.log("B");
+      let message = {
+        type: "fileUpload",
+        fileName: file.name,
+        fileSize: file.size,
+        md5Msg: file.md5,
+        isFont: false,
+      };
+      ws.send(JSON.stringify(message));
+      showState.value[file.name] = 100;
+      file.sent = true;
+      file.uploading = false;
+    }
+
+    // if (receivedSize.value === file.size) {
+    //   setTimeout(function () {
+    //     newSubmitFiles();
+    //   }, 100);
+    // }
+  }
+};
+
 //
 const sendData = async (file, chunkSize) => {
   if (file.size === 0) {
@@ -1608,10 +1684,7 @@ const sendData = async (file, chunkSize) => {
     if (offset < file.size) {
       readSlice(offset);
       ws.setRetryCount(0);
-      // setTimeout(() => {
 
-      //   console.log(123)
-      // },1000)
     } else {
       file.sent = true;
       file.uploading = false;
@@ -1649,26 +1722,6 @@ const downloadBtn = async () => {
   isDownloadDisable.value = true;
   ws.send(JSON.stringify({ type: "fileDownload", jobuid: jobuid.value }));
 
-  // try {
-  //   if (window.showSaveFilePicker) {
-  //     const fileHandle = await window.showSaveFilePicker({
-  //       suggestedName: lastInput2.value,
-  //     });
-  //     if (fileHandle) {
-  //       writable.value = await fileHandle.createWritable({ keepExistingData: true });
-
-  //     }
-  //   }
-  // } catch (error) {
-  //   if (writable.value) {
-  //     await writable.value.close();
-  //     writable.value = null;
-  //   }
-  // } finally {
-  //   console.log("下载")
-  //   isDownloadDisable.value = true;
-  //   ws.send(JSON.stringify({ type: "fileDownload", jobuid: jobuid.value }));
-  // }
 };
 
 const sleep = (ms) => {
@@ -1697,6 +1750,8 @@ const addWork = () => {
   tempInfo.value = {};
 
   selectValue.value = "H.264 - Match Render Settings - 15 Mbps";
+
+  electronInfo.value.allOK = false;
 };
 
 //组装Template
@@ -2054,6 +2109,8 @@ const renderOptions = [
                       </el-form>
                       <el-text v-model="renderForm.starting" class="mx-1" style="margin: 0 50px">Starting # <el-input style="width: 100px" v-model="outputForm.starting" :disabled="!outputForm.videoOutput" @blur="isNoStartingVal()" /></el-text>
 
+                      <el-text v-model="renderForm.ending" class="mx-1" style="margin: 0 50px">Ending # <el-input style="width: 100px" v-model="outputForm.ending" :disabled="!outputForm.videoOutput" @blur="isNoEndingVal()" /></el-text>
+
                       <el-checkbox v-model="outputForm.useCompFrameNumber" :disabled="!outputForm.videoOutput">Use Comp Frame Number</el-checkbox>
                     </div>
 
@@ -2088,7 +2145,7 @@ const renderOptions = [
                           <el-table-column prop="name" />
 
                           <el-table-column label="Width" header-align="center" align="center">
-                            <template #default="scope"> <el-input v-model="outputForm.resizeToWidth" :disabled="isWidthDisable" @blur="isNoWidthVal"/> </template>
+                            <template #default="scope"> <el-input v-model="outputForm.resizeToWidth" :disabled="isWidthDisable" @blur="isNoWidthVal" /> </template>
                           </el-table-column>
 
                           <el-table-column width="50px" align="center">
@@ -2096,7 +2153,7 @@ const renderOptions = [
                           </el-table-column>
 
                           <el-table-column label="Height" header-align="center" align="center">
-                            <template #default="scope"> <el-input v-model="outputForm.resizeToHeight" :disabled="isHeightDisable" @blur="isNoHeightVal"/> </template>
+                            <template #default="scope"> <el-input v-model="outputForm.resizeToHeight" :disabled="isHeightDisable" @blur="isNoHeightVal" /> </template>
                           </el-table-column>
 
                           <el-table-column min-width="200px">
@@ -2129,7 +2186,7 @@ const renderOptions = [
                           <el-table-column label="Top" header-align="center">
                             <template #default="scope">
                               <div style="display: flex; align-items: center">
-                                <el-input v-model="outputForm.cropTop" :disabled="isCropDisable" @blur="isNoTopVal"/>
+                                <el-input v-model="outputForm.cropTop" :disabled="isCropDisable" @blur="isNoTopVal" />
                               </div>
                             </template>
                           </el-table-column>
@@ -2137,7 +2194,7 @@ const renderOptions = [
                           <el-table-column label="Left" header-align="center">
                             <template #default="scope">
                               <div style="display: flex; align-items: center">
-                                <el-input v-model="outputForm.cropLeft" :disabled="isCropDisable" @blur="isNoLeftVal"/>
+                                <el-input v-model="outputForm.cropLeft" :disabled="isCropDisable" @blur="isNoLeftVal" />
                               </div>
                             </template>
                           </el-table-column>
@@ -2145,7 +2202,7 @@ const renderOptions = [
                           <el-table-column label="Bottom" header-align="center">
                             <template #default="scope">
                               <div style="display: flex; align-items: center">
-                                <el-input v-model="outputForm.cropBottom" :disabled="isCropDisable" @blur="isNoBottomVal"/>
+                                <el-input v-model="outputForm.cropBottom" :disabled="isCropDisable" @blur="isNoBottomVal" />
                               </div>
                             </template>
                           </el-table-column>
@@ -2153,7 +2210,7 @@ const renderOptions = [
                           <el-table-column label="Right" header-align="center">
                             <template #default="scope">
                               <div style="display: flex; align-items: center">
-                                <el-input v-model="outputForm.cropRight" :disabled="isCropDisable" @blur="isNoRightVal"/>
+                                <el-input v-model="outputForm.cropRight" :disabled="isCropDisable" @blur="isNoRightVal" />
                               </div>
                             </template>
                           </el-table-column>
@@ -2359,14 +2416,13 @@ const renderOptions = [
                         <el-form class="demo-form-inline" label-width="120px">
                           <el-form-item>格式： 小时:分钟:秒:毫秒</el-form-item>
                           <el-form-item label="Start">
-                            <el-input v-model="startTime" @input="calculateDuration" @blur="isNoStartTimeVal"/>
+                            <el-input v-model="startTime" @input="calculateDuration" @blur="isNoStartTimeVal" />
                           </el-form-item>
                           <el-form-item label="End">
-                            <el-input v-model="endTime" @input="calculateDuration" 
-                            @blur="isNoEndTimeVal"/>
+                            <el-input v-model="endTime" @input="calculateDuration" @blur="isNoEndTimeVal" />
                           </el-form-item>
                           <el-form-item label="Duration">
-                            <el-input v-model="duration" @input="calculateEndTime" @blur="isNoDurationTimeVal"/>
+                            <el-input v-model="duration" @input="calculateEndTime" @blur="isNoDurationTimeVal" />
                           </el-form-item>
                         </el-form>
                       </div>

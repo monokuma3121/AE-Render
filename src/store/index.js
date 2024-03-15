@@ -28,7 +28,21 @@ export const mainStore = defineStore("main", {
       isLook:0,
       isCover:false,
       renderState:'',
-      downloadId:''
+      downloadId:'',
+      electronInfo:{
+        compName:'',
+        frameRate:0,
+        width:'',
+        height:'',
+        startTime:'',
+        endTime:'',
+        startFrame:'',
+        endFrame:'',
+        font:null,
+        folderInfor:null,
+        allOK:false
+
+      }
 
     };
   },

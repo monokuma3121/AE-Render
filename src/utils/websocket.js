@@ -37,6 +37,8 @@ let heartbeatStatus = "waiting";
 let retryCount = 0;
 
 export const isSend = ref(true);
+export const needSendFiles = ref([]);
+export const needSendFont = ref([]);
 
 //渲染进度
 export let renderProgress = ref([]);
@@ -165,6 +167,7 @@ ws.setMessageHandler(async (e) => {
         }
         break;
       case "receivedFile":
+        console.log("receivedSize",message.data);
         receivedSize.value = message.data;
         received.value = true;
         break;
@@ -172,6 +175,11 @@ ws.setMessageHandler(async (e) => {
         ifContinue.value = true;
         state.value = message.state;
         isSend.value = false;
+   
+        if(message.fileName) {
+          console.log("fileName:",message.fileName);
+          window.electronAPI.uploadFile(message.fileName)
+        }
 
         break;
       case "preparation":
@@ -204,6 +212,12 @@ ws.setMessageHandler(async (e) => {
         }
 
         break;
+      case "fileAndFontCheck":
+        console.log(message);
+ needSendFiles.value = message.files;
+needSendFont.value = message.fonts;
+
+      break;
       case "jobNameCheck":
         isRepeat.value = message.result;
 
@@ -281,6 +295,7 @@ ws.setMessageHandler(async (e) => {
     }
   }
 });
+
 
 
 
