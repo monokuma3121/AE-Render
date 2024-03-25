@@ -6,6 +6,11 @@ export const tempInfo = ref({});
 
 export let writable = ref(null);
 
+export let fileSizes = ref(null);
+
+export let newSubmitFlag = ref(0);
+export let msgName = ref("");
+
 /**
  * 上传、渲染、下载的disabled
  */
@@ -14,6 +19,18 @@ export let isRenderDisable = ref(true);
 export let isDownloadDisable = ref(true);
 
 export let downloadJobId = ref("");
+
+//获取文件类型
+const getTypeName = (typeName) => {
+  let fileSuffixName = typeName.slice(((typeName.lastIndexOf(".") - 1) >>> 0) + 2);
+  if (fileSuffixName === "aep") {
+    return "工程";
+  } else if (["ttf", "otf", "fon", "font", "ttc", "woff"].includes(fileSuffixName)) {
+    return "字体";
+  } else {
+    return "素材";
+  }
+};
 
 /**
  * Websocket
@@ -167,36 +184,39 @@ ws.setMessageHandler(async (e) => {
         }
         break;
       case "receivedFile":
-        console.log("receivedSize",message.data);
+
         receivedSize.value = message.data;
+
+        
         received.value = true;
+       
+
+        // if (fileSizes.value === receivedSize.value) {
+        //   setTimeout(function () {
+        //     console.log("调用了");
+        //     newSubmitFlag.value++
+
+        //   }, 100);
+        // }
+
         break;
       case "fileUpload":
+   
         ifContinue.value = true;
         state.value = message.state;
-        isSend.value = false;
-   
-        if(message.fileName) {
-          console.log("fileName:",message.fileName);
-          window.electronAPI.uploadFile(message.fileName)
-        }
 
+        msgName.value = message.fileName;
+        isSend.value = false
         break;
       case "preparation":
-
         downloadJobId.value = message.jobuid;
         saveFileName = message.fileName;
         saveFileSize = message.data;
-                
-        if(downloadJobId.value !== '00') {
+
+        if (downloadJobId.value !== "00") {
           isRenderDisable.value = true;
           isDownloadDisable.value = false;
-  
         }
-
-
-
-
 
         break;
       case "renderProgress":
@@ -213,11 +233,11 @@ ws.setMessageHandler(async (e) => {
 
         break;
       case "fileAndFontCheck":
-        console.log(message);
- needSendFiles.value = message.files;
-needSendFont.value = message.fonts;
 
-      break;
+
+        needSendFont.value = message.fonts;
+
+        break;
       case "jobNameCheck":
         isRepeat.value = message.result;
 
@@ -232,7 +252,6 @@ needSendFont.value = message.fonts;
         break;
       case "searchTemplateInfor":
         tempInfo.value = message;
-  
 
         break;
       default:
@@ -269,12 +288,9 @@ needSendFont.value = message.fonts;
       //保留两位小数
       //renderId.value = message.jobuid;
 
-
       downloadProgress.value[downloadJobId.value] = parseFloat(((totalReceivedSize / saveFileSize) * 100).toFixed(2));
 
- 
       if (saveFileSize === totalReceivedSize) {
-
         totalReceivedSize = 0;
         const fileBlob = new Blob(receivedChunksLocal);
         const aDownloadLink = document.createElement("a");
@@ -282,26 +298,12 @@ needSendFont.value = message.fonts;
         aDownloadLink.download = saveFileName;
 
         aDownloadLink.click();
-        receivedChunksLocal = [];  
+        receivedChunksLocal = [];
 
-        if(downloadJobId.value !== '00') {
+        if (downloadJobId.value !== "00") {
           isDownloadDisable.value = false;
-  
         }
-
-    
-
       }
     }
   }
 });
-
-
-
-
-
-
-
-
-
-

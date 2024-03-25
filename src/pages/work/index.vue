@@ -10,7 +10,7 @@ import { mainStore } from "@/store";
 import { storeToRefs } from "pinia";
 const store = mainStore();
 
-let { isLook, isCover, renderState, downloadId, electronInfo } = storeToRefs(store);
+let { isLook, isCover, renderState, downloadId, electronInfo, showDesktop } = storeToRefs(store);
 
 const ref1 = ref();
 const ref2 = ref();
@@ -21,10 +21,18 @@ const ref6 = ref();
 const ref7 = ref();
 const ref8 = ref();
 
+let myOffset = ref(0);
+
+let currentFileName = ref(null);
+let currentFileSize = ref(null);
+
 const setOutputDialog = ref(false);
 const setRenderDialog = ref(false);
 const customDialogVisible = ref(false);
 const switchFlag = ref(false);
+
+const fontArr = ref([]);
+const searchArr = ref([]);
 
 const isOff = ref(true);
 
@@ -116,7 +124,7 @@ function checkAndRemoveKey(Key, newVal) {
     delete outputSettingsTemp.value[targetKey];
     outputSettingsTemp.value[targetKey] = `${newVal}`;
   } else {
-    // 如果不重复，则打印“124”
+    // 如果不重复
     outputSettingsTemp.value[targetKey] = `${newVal}`;
   }
 }
@@ -179,67 +187,56 @@ function objectToString(obj) {
 }
 
 const isNoStartingVal = () => {
-
   if (outputForm.starting === "") {
     outputForm.starting = 0;
   }
 };
 const isNoEndingVal = () => {
-  
   if (outputForm.ending === "") {
     outputForm.ending = 0;
   }
 };
 const isNoWidthVal = () => {
- 
   if (outputForm.resizeToWidth === "") {
     outputForm.resizeToWidth = "0";
   }
 };
 const isNoHeightVal = () => {
-
   if (outputForm.resizeToHeight === "") {
     outputForm.resizeToHeight = "0";
   }
 };
 const isNoTopVal = () => {
-
   if (outputForm.cropTop === "") {
     outputForm.cropTop = 0;
   }
 };
 const isNoLeftVal = () => {
- 
   if (outputForm.cropLeft === "") {
     outputForm.cropLeft = 0;
   }
 };
 const isNoBottomVal = () => {
- 
   if (outputForm.cropBottom === "") {
     outputForm.cropBottom = 0;
   }
 };
 const isNoRightVal = () => {
-
   if (outputForm.cropRight === "") {
     outputForm.cropRight = 0;
   }
 };
 const isNoStartTimeVal = () => {
-
   if (startTime.value === "") {
     startTime.value = "0:0:0:0";
   }
 };
 const isNoEndTimeVal = () => {
- 
   if (endTime.value === "") {
     endTime.value = "0:0:0:0";
   }
 };
 const isNoDurationTimeVal = () => {
-
   if (duration.value === "") {
     duration.value = "0:0:0:0";
   }
@@ -259,7 +256,6 @@ watch(
         () => outputForm.includeProjectLink,
         (newVal, oldVal) => {
           checkAndRemoveKey("includeProjectLink", newVal);
-    
         }
       );
 
@@ -448,7 +444,6 @@ watch(
         () => renderForm.quality,
         (newVal, oldVal) => {
           renderCheckAndRemoveKey("quality", newVal);
-         
         }
       );
 
@@ -711,8 +706,11 @@ const progressCount = inject("progressCount");
 const tempInfo = inject("tempInfo");
 const downloadProgress = inject("downloadProgress");
 const downloadJobId = inject("downloadJobId");
-const needSendFiles = inject("needSendFiles");
+
 const needSendFont = inject("needSendFont");
+const fileSizes = inject("fileSizes");
+const newSubmitFlag = inject("newSubmitFlag");
+const msgName = inject("msgName");
 
 let temp = inject("temp");
 let receivedSize = inject("receivedSize");
@@ -861,7 +859,6 @@ watch(
           isWidthDisable.value = false;
           isHeightDisable.value = false;
         } else {
-        
           const parts = outputForm.resizeTo.split(" · ");
 
           outputForm.resizeToWidth = parts[1].split("x")[0];
@@ -933,6 +930,22 @@ watch(
     deep: true,
   }
 );
+
+const currentSize = ref("");
+
+// watch(
+//   receivedSize,
+
+//   () => {
+//     console.log("receivedSize:", receivedSize.value);
+//     if (receivedSize.value === currentSize.value) {
+//       isSend.value = false;
+//     }
+//   },
+//   {
+//     deep: true,
+//   }
+// );
 
 const currentInput2 = ref(".mp4");
 const outputModuleValue = ref("H.264 - Match Render Settings - 15 Mbps");
@@ -1018,7 +1031,7 @@ watch(
   }
 );
 
-const currentMd5 = ref([]);
+
 
 watch(
   electronInfo,
@@ -1027,7 +1040,7 @@ watch(
     if (electronInfo.value.allOK) {
       displayFilesRef.value = [];
 
-      currentMd5.value = [];
+    
 
       lastInput1.value = electronInfo.value.compName;
 
@@ -1045,19 +1058,14 @@ watch(
       outputForm.ending = electronInfo.value.endFrame;
 
       if (electronInfo.value.folderInfor) {
-   
-
         electronInfo.value.folderInfor.forEach((file) => {
-          insertFiles([{ name: file.name, size: file.size, md5: file.md5 }]);
-          currentMd5.value.push(file.md5);
+          insertFiles([{ name: file.name, size: file.size, md5: file.md5, type: file.type }]);
+         
         });
+        updateFileList();
       }
       loading.value = false;
-      ws.send(JSON.stringify({ type: "fileAndFontCheck", files: currentMd5.value, fonts: electronInfo.value.font }));
-
-      console.log(electronInfo.value.allOK);
-
- 
+      ws.send(JSON.stringify({ type: "fileAndFontCheck",  fonts: electronInfo.value.font }));
 
       isSubmitDisable.value = false;
     }
@@ -1098,7 +1106,6 @@ watch(
   showRenderMsg,
   () => {
     if (showRenderMsg.value === "创建中") {
-    
       isCreated.value = true;
     } else {
       isCreated.value = false;
@@ -1120,6 +1127,7 @@ watch(
     deep: true,
   }
 );
+
 watch(
   tempInfo,
   () => {
@@ -1206,20 +1214,23 @@ watch(selectValue, () => {
 
 //比较两个文件名，返回0、1、-1
 const compareFiles = (a, b) => {
-  const isAep1 = a.name.endsWith(".aep"); //endWith:判断字符串是否以指定的子字符串结尾（区分大小写）true/false
-  const isAep2 = b.name.endsWith(".aep");
-  //isAep1是'.aep'后缀，isAep2不是'.aep'后缀
-  if (isAep1 && !isAep2) {
-    return -1;
+  if (getTypeName(a.name) === "字体" || getTypeName(b.name) === "字体") {
+  } else {
+    const isAep1 = a.name.endsWith(".aep"); //endWith:判断字符串是否以指定的子字符串结尾（区分大小写）true/false
+    const isAep2 = b.name.endsWith(".aep");
+    //isAep1是'.aep'后缀，isAep2不是'.aep'后缀
+    if (isAep1 && !isAep2) {
+      return -1;
+    }
+    //isAep1不是'.aep'后缀，isAep2是'.aep'后缀
+    else if (!isAep1 && isAep2) {
+      return 1;
+    }
+    //都是，都不是
+    else {
+      return a.name.localeCompare(b.name);
+    } //localeCompare:比较了\两个字符串 a.name 和 b.name。方法返回一个数字，表示两个字符串之间的关系。如果第一个字符串应该排在第二个字符串的前面，则返回一个正数。如果第一个字符串应该排在第二个字符串的后面，则返回一个负数。如果两个字符串相同，则返回 0
   }
-  //isAep1不是'.aep'后缀，isAep2是'.aep'后缀
-  else if (!isAep1 && isAep2) {
-    return 1;
-  }
-  //都是，都不是
-  else {
-    return a.name.localeCompare(b.name);
-  } //localeCompare:比较了\两个字符串 a.name 和 b.name。方法返回一个数字，表示两个字符串之间的关系。如果第一个字符串应该排在第二个字符串的前面，则返回一个正数。如果第一个字符串应该排在第二个字符串的后面，则返回一个负数。如果两个字符串相同，则返回 0
 };
 
 //删除文件，在displayFilesRef中删除。默认删除后更新文件列表
@@ -1289,6 +1300,25 @@ const insertFiles = async (aArray, isCheck = true) => {
       isRenderDisable.value = true;
     });
   }
+};
+
+const selectFontBtn = async () => {
+  const filesInputTemp = document.createElement("input");
+  filesInputTemp.setAttribute("type", "file");
+  filesInputTemp.setAttribute("multiple", "multiple");
+  filesInputTemp.style.display = "none";
+  filesInputTemp.click();
+
+  // 定义一个函数来处理change事件，并返回一个Promise，当所有MD5计算完成后resolve
+  const handleFileChange = (e) => {
+    if (getTypeName(e.target.files[0].name) === "字体") {
+      insertFiles(Array.from(e.target.files));
+    } else {
+      alert("请上传字体文件！");
+    }
+  };
+
+  filesInputTemp.addEventListener("change", handleFileChange);
 };
 
 // 点击‘选择文件’按钮
@@ -1384,9 +1414,9 @@ const changeOutName = (e) => {
   }
 };
 
-const test = () => {
+const test = () => {};
 
-};
+const testArr = ["微软雅黑", "小米兰亭", "微软雅黑", "微软雅黑", "微软雅黑", "微软雅黑", "微软雅黑"];
 
 //点击“替换”按钮
 const handleReplace = (row) => {
@@ -1438,6 +1468,8 @@ const format = (percentage) => {
     return "待上传";
   } else if (percentage === 100) {
     return "已上传";
+  } else if (isNaN(percentage)) {
+    return "待上传";
   } else {
     return `${percentage}%`;
   }
@@ -1457,6 +1489,8 @@ const getState = (file) => {
   //能拿到名字
 };
 
+const showOutputInput = ref(false);
+
 //定义更新文件列表的函数
 function updateFileList() {
   assetList.value = displayFilesRef.value.filter((file) => {
@@ -1474,6 +1508,8 @@ function updateFileList() {
     }
 
     if (getSuffixName(file.name) === "aep") {
+      showOutputInput.value = true;
+
       if (jobName.value === "") {
         jobName.value = getFullName(file.name);
         ws.send(JSON.stringify({ type: "jobNameCheck", data: getFullName(file.name), id: workNameId.value }));
@@ -1524,6 +1560,8 @@ const getTypeName = (typeName) => {
   let fileSuffixName = typeName.slice(((typeName.lastIndexOf(".") - 1) >>> 0) + 2);
   if (fileSuffixName === "aep") {
     return "工程";
+  } else if (["ttf", "otf", "fon", "font", "ttc", "woff"].includes(fileSuffixName)) {
+    return "字体";
   } else {
     return "素材";
   }
@@ -1544,9 +1582,31 @@ const formatFileSize = (size) => {
 };
 
 //点击“上传文件”按钮
-const submitBtn = () => {
-  if (electronInfo.value.allOK) {
-    newSubmitFiles();
+const submitBtn = async () => {
+  if (showDesktop.value) {
+    //如果数组的第一个文件的后缀为aep
+    if (isRepeat.value && jobName.value !== "") {
+      //如果数组的第一个文件的后缀为aep
+
+      //禁用上传按钮
+      isSubmitDisable.value = true;
+      electronInfo.value.allOK = false;
+
+      //for循环,对一键搜集的文件和字体文件分组
+      for (let num = 0; num < displayFilesRef.value.length; ++num) {
+        const file = displayFilesRef.value[num];
+        if (getTypeName(file.name) !== "字体") {
+          searchArr.value.push(file);
+        } else {
+          //上传的是字体文件
+          fontArr.value.push(file);
+        }
+      }
+      await submitFonts(0, fontArr.value.length);
+      await newSubmitFiles(0, searchArr.value.length);
+    } else {
+      alert("工作名重复或为空");
+    }
   } else {
     if (displayFilesRef.value[0].name.slice(((displayFilesRef.value[0].name.lastIndexOf(".") - 1) >>> 0) + 2) === "aep") {
       //如果数组的第一个文件的后缀为aep
@@ -1612,49 +1672,139 @@ const submitFiles = async (startIndex, endIndex) => {
   isRenderDisable.value = false;
 };
 
-//newSubmit
-const newSubmitFiles = async () => {
-  //禁用上传按钮
-  isSubmitDisable.value = true;
-  electronInfo.value.allOK = false;
-
+const submitFonts = async (startIndex, endIndex) => {
   //for循环
-  for (let num = 0; num < displayFilesRef.value.length; ++num) {
-    const file = displayFilesRef.value[num];
+  for (let idx = startIndex; idx < endIndex; ++idx) {
+    console.log("上传字体");
+    const file = fontArr.value[idx];
+    //file.sent的值为true时跳出for循环
     if (file.sent) continue;
+    let message = {
+      type: "fileUpload", //类型
+      fileName: file.name, //文件名
+      fileSize: file.size, //文件大小
+      fileLastModified: file.lastModified, //最后一次修改时间(ms)
+      fileChunkSize: chunkSize, //文件片段最大长度值
+      isFont: true,
+    };
 
-    if (file.md5 in needSendFiles) {
-      console.log("A");
-      let message = {
-        type: "fileUpload",
-        fileName: file.name,
-        fileSize: file.size,
-        md5Msg: file.md5,
-        isFont: false,
-      };
-      ws.send(JSON.stringify(message));
+    ws.send(JSON.stringify(message));
+
+    while (isSend.value) {
+      await sleep(1);
+    }
+    isSend.value = true;
+    if (state.value) {
+      file.sent = false;
+      file.uploading = true;
+
+      sendData(file, chunkSize);
     } else {
-      console.log("B");
-      let message = {
-        type: "fileUpload",
-        fileName: file.name,
-        fileSize: file.size,
-        md5Msg: file.md5,
-        isFont: false,
-      };
-      ws.send(JSON.stringify(message));
       showState.value[file.name] = 100;
       file.sent = true;
       file.uploading = false;
+      continue;
     }
 
-    // if (receivedSize.value === file.size) {
-    //   setTimeout(function () {
-    //     newSubmitFiles();
-    //   }, 100);
-    // }
+    while (idx < endIndex) {
+      if (receivedSize.value === file.size) break;
+
+      await sleep(10);
+    }
+
+    receivedSize.value = 0;
   }
+  //启用渲染按钮
+
+  isRenderDisable.value = false;
 };
+
+const newSubmitFiles = async (startIndex, endIndex) => {
+  //for循环
+  for (let idx = startIndex; idx < endIndex; ++idx) {
+    const file = searchArr.value[idx];
+    //file.sent的值为true时跳出for循环
+    if (file.sent) continue;
+
+      currentSize.value = file.size;
+      let message = {
+        type: "fileUpload",
+        fileName: file.name,
+        fileSize: file.size,
+        md5Msg: file.md5,
+        isFont: false,
+      };
+      // fileSizes.value = file.size;
+      ws.send(JSON.stringify(message));
+
+      while (isSend.value) {
+        await sleep(1);
+      }
+      isSend.value = true;
+
+      if (state.value) {
+        //如果数据库没存，走这个
+
+        file.sent = false;
+        file.uploading = true;
+        myOffset.value = 0;
+        currentFileName.value = file.md5;
+        window.electronAPI.uploadFile(msgName.value);
+      } else {
+        //数据库存了，直接走这个，让进度条满
+
+        showState.value[file.name] = 100;
+        file.sent = true;
+        file.uploading = false;
+        continue;
+      }
+
+      while (idx < endIndex) {
+        if (receivedSize.value === file.size) break;
+
+        await sleep(10);
+      }
+
+      receivedSize.value = 0;
+
+  }
+
+  displayFilesRef.value = [];
+  for (let num = 0; num < searchArr.value.length; ++num) {
+    const file = searchArr.value[num];
+    displayFilesRef.value.push(file);
+    updateFileList();
+  }
+
+  for (let num = 0; num < fontArr.value.length; ++num) {
+    const file = fontArr.value[num];
+    displayFilesRef.value.unshift(file);
+  }
+
+  //启用渲染按钮
+  isRenderDisable.value = false;
+};
+
+if (window.electronAPI) {
+  window.electronAPI.onUploadChunk((event, values) => {
+    // 直接转发给服务端
+    ws.send(values);
+    myOffset.value += values.length;
+    searchArr.value.forEach(function (file) {
+      if (file.md5 === currentFileName.value) {
+        file.sentPercentage = ((myOffset.value / file.size) * 100).toFixed(2);
+
+        if (myOffset.value < file.size) {
+          ws.setRetryCount(0);
+        } else {
+          file.sent = true;
+          file.uploading = false;
+        }
+        updateFileList();
+      }
+    });
+  });
+}
 
 //
 const sendData = async (file, chunkSize) => {
@@ -1679,12 +1829,12 @@ const sendData = async (file, chunkSize) => {
      * 进度条
      */
     offset += e.target.result.byteLength;
+
     file.sentPercentage = ((offset / file.size) * 100).toFixed(2);
 
     if (offset < file.size) {
       readSlice(offset);
       ws.setRetryCount(0);
-
     } else {
       file.sent = true;
       file.uploading = false;
@@ -1721,7 +1871,6 @@ const renderBtn = () => {
 const downloadBtn = async () => {
   isDownloadDisable.value = true;
   ws.send(JSON.stringify({ type: "fileDownload", jobuid: jobuid.value }));
-
 };
 
 const sleep = (ms) => {
@@ -1752,14 +1901,23 @@ const addWork = () => {
   selectValue.value = "H.264 - Match Render Settings - 15 Mbps";
 
   electronInfo.value.allOK = false;
+  searchArr.value = [];
+  fontArr.value = [];
+  isCreated.value = false;
+
+  needSendFont.value = [];
+
+
+  window.location.reload();
 };
 
 //组装Template
 const setTemplate = () => {
   const templateJSON = {};
   //为templateJSON模板添加'template'的json
+
   templateJSON["template"] = {
-    src: displayFilesRef.value[0].name, //使用'.aep'后缀的名字
+    src: searchArr.value[0].name, //使用'.aep'后缀的名字
     composition: lastInput1.value,
     outputModule: outputModuleValue.value,
     outputExt: outputExtValue.value, //后缀也要相应的改
@@ -1781,11 +1939,11 @@ const setTemplate = () => {
   };
   templateJSON["assets"] = [];
 
-  displayFilesRef.value.forEach((file) => {
+  searchArr.value.forEach((file) => {
     if (!file.name.endsWith(".aep")) {
       let temp = {
         src: file.name,
-        type: file.type.split("/")[0],
+        type: file.type?.split("/")[0],
         layerName: imgList.value[file.name] ? imgList.value[file.name] : file.name,
       };
       templateJSON["assets"].push(temp);
@@ -1877,7 +2035,7 @@ const renderOptions = [
           </template>
 
           <div class="uploadDiv">
-            <el-button ref="ref1" type="primary" plain @click="selectBtn" :disabled="isSelectDisable"> 选择文件 </el-button>
+            <el-button ref="ref1" type="primary" plain @click="selectBtn" :disabled="isSelectDisable" v-if="!showDesktop"> 选择文件 </el-button>
           </div>
 
           <div class="table">
@@ -1918,13 +2076,14 @@ const renderOptions = [
 
               <el-table-column min-width="27%" label="操作&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" header-align="center">
                 <template #default="scope">
-                  <el-button type="primary" :icon="Edit" @click="handleReplace(scope.row)" />
+                  <el-button type="primary" :icon="Edit" @click="handleReplace(scope.row)" v-if="getTypeName(scope.row.name) === '字体' || !showDesktop" />
 
-                  <el-button type="danger" :icon="Delete" @click="handleDelete(scope.row)" />
+                  <el-button type="danger" :icon="Delete" @click="handleDelete(scope.row)" v-if="getTypeName(scope.row.name) === '字体' || !showDesktop" />
                 </template>
               </el-table-column>
             </el-table>
           </div>
+          <div v-if="showDesktop" style="margin-bottom: 40px"></div>
         </el-card>
 
         <div class="left-bottom">
@@ -1978,7 +2137,7 @@ const renderOptions = [
           <div class="show">
             <!-- 工作名设置 -->
 
-            <el-descriptions class="work-class" title="工作设置" :column="1" border>
+            <el-descriptions class="work-class" title="工作设置" :column="2" border>
               <el-descriptions-item>
                 <template #label>
                   <div class="cell-item" ref="ref2">工作名</div>
@@ -1991,6 +2150,14 @@ const renderOptions = [
                   <input class="my-input" type="text" :value="jobName" @blur="changeName($event)" />
                 </el-tooltip>
               </el-descriptions-item>
+
+              <el-descriptions-item label="输出名" :span="2" v-if="showDesktop && showOutputInput">
+                <div class="out-class">
+                  <input class="my-input2 out-2" type="text" name="text" :value="currentInput" @blur="changeOutName($event)" />
+
+                  <div class="out-3">{{ outputExtValue }}</div>
+                </div></el-descriptions-item
+              >
             </el-descriptions>
 
             <el-descriptions class="work-class" direction="vertical" :column="2" border>
@@ -2509,8 +2676,22 @@ const renderOptions = [
             </div>
 
             <el-scrollbar v-loading="loading" element-loading-text="文件导入中..." class="show-input">
+              <div v-if="needSendFont.length > 0">
+                <!-- v-if="needSendFont.length > 0" -->
+                <el-descriptions title="所需字体" class="asset-class"> </el-descriptions>
+
+                <el-table :data="needSendFont" border style="width: 100%" :header-cell-style="{ backgroundColor: '#F5F7FA' }">
+                  <el-table-column label="缺少字体">
+                    <template #default="scope">{{ scope.row }} </template>
+                  </el-table-column>
+                  <el-table-column>
+                    <template #default="scope"> <el-button type="primary" plain @click="selectFontBtn"> 上传字体 </el-button></template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
               <!-- Template模板 -->
-              <div v-for="(item, index) in displayFilesRef" :key="index">
+              <div v-for="(item, index) in displayFilesRef" :key="index" v-if="!showDesktop">
                 <el-descriptions title="Template" direction="vertical" :column="3" border class="asset-class" v-if="getSuffixName(item.name) === 'aep'">
                   <el-descriptions-item label="文件名">{{ item.name }}</el-descriptions-item>
                   <el-descriptions-item label="合成名">
@@ -2528,7 +2709,7 @@ const renderOptions = [
                 </el-descriptions>
               </div>
 
-              <div v-if="assetList.length">
+              <div v-if="assetList.length && !showDesktop">
                 <!-- Asset模板 -->
                 <el-descriptions title="Asset" class="asset-class"> </el-descriptions>
 

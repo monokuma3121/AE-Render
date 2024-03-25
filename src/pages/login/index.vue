@@ -51,8 +51,7 @@ const handleLogin = (loginFormRef) => {
             if (res.state) {
               
               setToken(loginForm.username);
-              const serializedVariable = JSON.stringify(loginForm.username);
-              window.electronAPI.sendSerializedVariableToElectron(serializedVariable);
+
               mainStore().msgAlert("登录成功", "success");
               setTimeout(() => {
                 router.push({ path: "/" });

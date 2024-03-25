@@ -1,47 +1,12 @@
-const numbers = [
-  4000,
-  4000,
-  2000,
-  1050,
-  4000,
-  2000,
-  2300,
-  4000,
-  2000,
-  759,
-  68.97,
-  4300,
-  1500,
-  9300,
-  4000,
-  1500,
-  2000,
-  9300,
-  1500,
-  4000,
-  1500,
-  2000,
-  2000,
-  2000,
-  1586,
-  1500,
-  4000,
-  229.90,
-  9300,
-  5000,
-  482.75,
-  505.74,
-  2000,
-  2000,
-  9300,
-  2000,
-  4000
-];
+// 首先确保安装了fontkit库
+// npm install fontkit
 
-let sum = 0;
-for (let i = 0; i < numbers.length; i++) {
-  sum += numbers[i];
-}
+const fontkit = require('fontkit');
 
-console.log(sum);
-// 输出：123,757.33
+fs.readFile('../../public/123.ttf', (err, buffer) => {
+  if (err) throw err;
+
+  const font = fontkit.create(buffer);
+  console.log(font.familyName); // 输出字体的家族名称
+  console.log(font.styleName); // 输出字体的样式名称
+});

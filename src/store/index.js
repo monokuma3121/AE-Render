@@ -29,6 +29,7 @@ export const mainStore = defineStore("main", {
       isCover:false,
       renderState:'',
       downloadId:'',
+      showDesktop:false,
       electronInfo:{
         compName:'',
         frameRate:0,
@@ -38,7 +39,7 @@ export const mainStore = defineStore("main", {
         endTime:'',
         startFrame:'',
         endFrame:'',
-        font:null,
+        font:[],
         folderInfor:null,
         allOK:false
 

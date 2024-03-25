@@ -15,7 +15,7 @@ export const app = createApp(App)
 
 
 
-import { ws,renderProgress, isRenderDisable,isDownloadDisable,jobName,isRepeat,temp,receivedSize,saveFileName,jobuid,histroyWorkList,renderId,myId,workNameId,state,isSend,progressCount,tempInfo,writable,downloadProgress,downloadJobId,needSendFiles,needSendFont} from '@/utils/websocket'
+import { ws,renderProgress, isRenderDisable,isDownloadDisable,jobName,isRepeat,temp,receivedSize,saveFileName,jobuid,histroyWorkList,renderId,myId,workNameId,state,isSend,progressCount,tempInfo,writable,downloadProgress,downloadJobId,needSendFont,fileSizes,newSubmitFlag,msgName} from '@/utils/websocket'
 app.provide('ws', ws) 
 app.provide('renderProgress', renderProgress) 
 app.provide('isRenderDisable', isRenderDisable) 
@@ -37,19 +37,18 @@ app.provide('tempInfo', tempInfo)
 app.provide('writable', writable) 
 app.provide('downloadProgress', downloadProgress) 
 app.provide('downloadJobId', downloadJobId) 
-app.provide('needSendFiles', needSendFiles) 
+
 app.provide('needSendFont', needSendFont) 
-
-
-
-
-
-
-
-
-
+app.provide('fileSizes', fileSizes) 
+app.provide('newSubmitFlag', newSubmitFlag) 
+app.provide('msgName', msgName) 
 
 
 app.use(createPinia()).use(router).use(ElementPlus, {
   locale: zhCn,
 }).mount('#app')
+
+
+
+
+
